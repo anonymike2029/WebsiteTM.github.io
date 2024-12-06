@@ -12,6 +12,8 @@ const port = 8000;
 let takenNames = [];
 // In-memory storage for messages
 let messages = [];
+// In-memory storage for user profile pictures
+let userProfilePics = {};  // Keyed by username
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -46,11 +48,36 @@ io.on('connection', (socket) => {
 
   // Listen for new chat messages from a user
   socket.on('sendMessage', (message) => {
-    // Add the new message to the messages array
-    messages.push(message);
+    messages.push(message);  // Store the message in the array
+    io.emit('newMessage', message);  // Broadcast to all clients
+  });
 
-    // Broadcast the message to all connected clients
-    io.emit('newMessage', message);
+  // Listen for an edit message request from a client
+  socket.on('editMessage', (messageData) => {
+    const index = messages.findIndex(msg => msg.messageId === messageData.messageId);
+    if (index !== -1) {
+      messages[index].message = messageData.newMessage;
+      io.emit('editedMessage', messages[index]);
+    }
+  });
+
+  // Listen for a delete message request from a client
+  socket.on('deleteMessage', (messageId) => {
+    const index = messages.findIndex(msg => msg.messageId === messageId);
+    if (index !== -1) {
+      messages.splice(index, 1);
+      io.emit('deletedMessage', messageId);  // Broadcast deletion to all clients
+    }
+  });
+
+  // Handle profile picture upload
+  socket.on('uploadProfilePic', (picData) => {
+    const userName = picData.userName;
+    userProfilePics[userName] = picData.picUrl;  // Store the uploaded profile picture
+    console.log(`Profile picture uploaded for ${userName}: ${picData.picUrl}`);
+
+    // Send the updated profile picture URL back to the client
+    io.emit('profilePicUpdated', { userName, picUrl: picData.picUrl });
   });
 
   socket.on('disconnect', () => {
