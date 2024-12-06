@@ -79,6 +79,7 @@
       word-wrap: break-word;
       opacity: 0;
       animation: fadeIn 1s forwards;
+      position: relative;
     }
 
     .my-message {
@@ -89,6 +90,14 @@
     .other-message {
       background-color: #7289da;
       align-self: flex-end; /* Align to the right */
+    }
+
+    .timestamp {
+      font-size: 10px;
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      opacity: 0.7;
     }
 
     @keyframes fadeIn {
@@ -118,7 +127,7 @@
 <script>
   const socket = io();
   let userName = '';
-  
+
   // Check if there's a stored username in localStorage
   const storedName = localStorage.getItem('userName');
   if (storedName) {
@@ -160,38 +169,80 @@
     }
   });
 
+  // Function to format time in 12-hour format (AM/PM)
+  function formatTime() {
+    const now = new Date();
+    let hours = now.getHours();
+    let minutes = now.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 12 hour format
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    return `${hours}:${minutes} ${ampm}`;
+  }
+
   // Handle Message Sending
   document.getElementById('messageInput').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       const messageContent = document.getElementById('messageInput').value.trim();
       if (messageContent) {
-        // Emit the message to the server
-        socket.emit('sendMessage', { sender: userName, message: messageContent });
+        // Emit the message to the server with timestamp
+        socket.emit('sendMessage', { sender: userName, message: messageContent, time: formatTime() });
         document.getElementById('messageInput').value = '';
       }
     }
   });
 
-  // Function to display messages
-  function displayMessage(sender, message) {
+  // Function to display messages with timestamp
+  function displayMessage(sender, message, time) {
     const chatBox = document.getElementById('chatBox');
     const messageDiv = document.createElement('div');
     messageDiv.textContent = `${sender}: ${message}`;
+
+    const timestamp = document.createElement('span');
+    timestamp.classList.add('timestamp');
+    timestamp.textContent = time;
+
+    messageDiv.appendChild(timestamp);
     messageDiv.classList.add('message');
     messageDiv.classList.add(sender === userName ? 'my-message' : 'other-message');
     chatBox.appendChild(messageDiv);
     chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
   }
 
+  // Function to send notification
+  function sendNotification(message) {
+    if (Notification.permission === 'granted') {
+      new Notification('New Message', {
+        body: message,
+        icon: 'path_to_icon.png', // Optional: Set your icon here
+      });
+    }
+  }
+
+  // Request Notification Permission if not granted
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+      }
+    });
+  }
+
   // Listen for new messages from the server
   socket.on('newMessage', (messageData) => {
-    displayMessage(messageData.sender, messageData.message);
+    displayMessage(messageData.sender, messageData.message, messageData.time);
+
+    // Send a notification for messages from other users
+    if (messageData.sender !== userName) {
+      sendNotification(`${messageData.sender}: ${messageData.message}`);
+    }
   });
 
   // Listen for previous messages on reconnect
   socket.on('previousMessages', (messages) => {
     messages.forEach(msg => {
-      displayMessage(msg.sender, msg.message);
+      displayMessage(msg.sender, msg.message, msg.time);
     });
   });
 </script>
