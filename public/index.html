@@ -5,23 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat App</title>
   <style>
-    /* Add your previous styles here */
     body {
-  background-color: #202225;
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  transition: background 0.3s;
-  background-size: cover;  /* Adjust the background image size */
-  background-position: center;  /* Ensures the background is centered */
-}
-
+      background-color: #202225;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      transition: background 0.3s;
+      background-size: cover;
+      background-position: center;
+    }
 
     #chatScreen {
       display: none;
@@ -54,28 +52,30 @@
       color: white;
       width: 96.8%;
     }
-    
+
     #backgroundOverlay {
-  display: none; /* Hidden by default */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Optional: for a darkened background */
-  backdrop-filter: blur(5px); /* Apply blur effect */
-  z-index: 999; /* Below the modal, but above other content */
-}
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 999;
+    }
 
     button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 80%;
-    }
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 80%;
+  margin-top: 10px; /* Adjust this value to move the button down */
+}
+
 
     #welcomeScreen {
       text-align: center;
@@ -101,12 +101,12 @@
 
     .my-message {
       background-color: #4CAF50;
-      align-self: flex-start; /* Align to the left */
+      align-self: flex-start;
     }
 
     .other-message {
       background-color: #7289da;
-      align-self: flex-end; /* Align to the right */
+      align-self: flex-end;
     }
 
     .timestamp {
@@ -122,9 +122,9 @@
       100% { opacity: 1; }
     }
 
-    /* Modal Styling */
     .modal {
-  display: none;
+  visibility: hidden;       /* Hidden by default */
+  opacity: 0;               /* Fully transparent */
   position: fixed;
   top: 50%;
   left: 50%;
@@ -132,18 +132,28 @@
   background-color: rgba(40, 44, 52, 0.6);
   border-radius: 10px;
   padding: 60px;
-  z-index: 1000; /* Higher z-index to appear on top of everything */
+  z-index: 1000;
+  transition: opacity 0.5s ease-in-out, visibility 0s 0.5s; /* Fade-in and delay visibility */
 }
 
-    .modal-content {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
+/* When modal is shown, make it visible with fade-in */
+.modal.show {
+  visibility: visible;      /* Make it visible */
+  opacity: 1;               /* Make it fully opaque */
+  transition-delay: 0s;      /* Allow the opacity to fade in immediately */
+}
 
-    .modal-button {
-  background-color: #d12c2c;
+/* Modal content (already centered, no changes here) */
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Button inside the modal */
+.modal-button {
+  background-color: #4CAF50;
   color: white;
   padding: 10px 10px;
   border: none;
@@ -151,14 +161,13 @@
   cursor: pointer;
   width: 200%;
   margin: 10px 0;
-  z-index: 1001; /* Ensure the buttons have a higher z-index than the modal background */
+  z-index: 1001;
 }
 
-
-body.blurred {
-  filter: blur(1px);
-  z-index: 0; /* Lower z-index to place under the modal */
-}
+    body.blurred {
+      filter: blur(1px);
+      z-index: 0;
+    }
 
     #backgroundButton {
       position: fixed;
@@ -184,30 +193,21 @@ body.blurred {
 </head>
 <body>
 
-<!-- Welcome Screen for Name Input -->
 <div id="welcomeScreen">
   <input id="nameInput" type="text" placeholder="Enter your name" />
   <button id="enterButton">Enter</button>
   <div id="errorMessage"></div>
 </div>
 
-<!-- Chat Screen -->
 <div id="chatScreen">
-  <div id="chatBox">
-    <!-- Messages will appear here -->
-  </div>
+  <div id="chatBox"></div>
   <input id="messageInput" type="text" placeholder="Type your message..." />
 </div>
 
-<!-- Background Button -->
 <button id="backgroundButton">Background</button>
 <div id="backgroundOverlay"></div>
-
-
-<!-- Hidden File Input for Background Image -->
 <input type="file" id="backgroundInput" accept="image/*" />
 
-<!-- Modal for Edit/Delete -->
 <div id="modal" class="modal">
   <div class="modal-content">
     <button id="editButton" class="modal-button">Edit</button>
@@ -221,9 +221,8 @@ body.blurred {
   const socket = io();
   let userName = '';
   let lastMessageTime = 0;
-  let currentMessageId = '';  // Store the current message ID for edit/delete actions
+  let currentMessageId = '';
 
-  // Check if there's a stored username in localStorage
   const storedName = localStorage.getItem('userName');
   if (storedName) {
     userName = storedName;
@@ -231,7 +230,6 @@ body.blurred {
     document.getElementById('chatScreen').style.display = 'flex';
   }
 
-  // On page load, check if there's a stored background image in localStorage
   window.onload = function() {
     const savedBackgroundImage = localStorage.getItem('backgroundImage');
     if (savedBackgroundImage) {
@@ -239,12 +237,12 @@ body.blurred {
     }
   };
 
-  // Handle background button click
   document.getElementById('backgroundButton').addEventListener('click', () => {
     document.getElementById('backgroundInput').click();
   });
+  
+  
 
-  // Handle background image selection
   document.getElementById('backgroundInput').addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -252,27 +250,43 @@ body.blurred {
       reader.onload = function(e) {
         const backgroundImageUrl = e.target.result;
         document.body.style.backgroundImage = `url(${backgroundImageUrl})`;
-
-        // Save the background image URL to localStorage
         localStorage.setItem('backgroundImage', backgroundImageUrl);
       };
       reader.readAsDataURL(file);
     }
   });
 
-  // Listen for previous messages when connected
   socket.on('previousMessages', (messages) => {
     messages.forEach(message => {
       displayMessage(message.sender, message.message, message.time, message.messageId);
     });
   });
 
-  // Listen for new messages from the server
-  socket.on('newMessage', (messageData) => {
-    displayMessage(messageData.sender, messageData.message, messageData.time, messageData.messageId);
-  });
+  // Check if the notification permission is granted, if not request permission
+if (Notification.permission !== 'granted') {
+  Notification.requestPermission();
+}
 
-  // Listen for edited messages
+// Function to show a browser notification
+function showNotification(message) {
+  if (Notification.permission === 'granted') {
+    new Notification('New Message', {
+      body: message,
+      icon: '/path/to/your/icon.png' // Optional: Add an icon for the notification
+    });
+  }
+}
+
+// Listen for new messages from the socket server
+socket.on('newMessage', (messageData) => {
+  // Display the message in the chat
+  displayMessage(messageData.sender, messageData.message, messageData.time, messageData.messageId);
+  
+  // Show a notification for the new message
+  showNotification(`${messageData.sender}: ${messageData.message}`);
+});
+
+
   socket.on('editedMessage', (messageData) => {
     const messageDiv = document.querySelector(`[data-id="${messageData.messageId}"]`);
     if (messageDiv) {
@@ -280,7 +294,6 @@ body.blurred {
     }
   });
 
-  // Listen for deleted messages
   socket.on('deletedMessage', (messageId) => {
     const messageDiv = document.querySelector(`[data-id="${messageId}"]`);
     if (messageDiv) {
@@ -288,11 +301,9 @@ body.blurred {
     }
   });
 
-  // Function to display a message
   function displayMessage(sender, message, time, messageId) {
     const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message');
-    messageDiv.classList.add(sender === userName ? 'my-message' : 'other-message');
+    messageDiv.classList.add('message', sender === userName ? 'my-message' : 'other-message');
     messageDiv.textContent = `${sender}: ${message}`;
     messageDiv.dataset.id = messageId;
 
@@ -303,7 +314,6 @@ body.blurred {
 
     document.getElementById('chatBox').appendChild(messageDiv);
 
-    // Add click event for edit/delete
     messageDiv.addEventListener('click', () => {
       if (sender === userName) {
         currentMessageId = messageId;
@@ -312,37 +322,18 @@ body.blurred {
     });
   }
 
-  
   function openModal() {
-  // Show the modal and the background overlay
-  document.getElementById('modal').style.display = 'block';
-  document.getElementById('backgroundOverlay').style.display = 'block'; // Show the background blur
-  
-  // Apply the fade-in animation to the modal and its buttons
-  const modal = document.getElementById('modal');
-  const buttons = document.querySelectorAll('.modal-button');
-  
-  // Trigger the fade-in effect
-  modal.style.animation = 'fadeIn 0.5s forwards'; // Modal fade-in
-  buttons.forEach(button => {
-    button.style.animation = 'fadeIn 0.5s forwards'; // Button fade-in
-  
-  });
-  
-  // Optionally, you can also ensure that the body is blurred
- // document.body.classList.add('blurred');
-}
-// Function to close the modal
-document.getElementById('closeButton').addEventListener('click', () => {
-  closeModal(); // Call the existing function to close the modal
-});
-
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
-  document.getElementById('backgroundOverlay').style.display = 'none'; // Hide the background blur
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('backgroundOverlay').style.display = 'block';
 }
 
-  // Handle Edit and Delete buttons
+  document.getElementById('closeButton').addEventListener('click', closeModal);
+
+  function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('backgroundOverlay').style.display = 'none';
+}
+
   document.getElementById('editButton').addEventListener('click', () => {
     const newMessage = prompt('Edit your message:');
     if (newMessage) {
@@ -356,49 +347,37 @@ function closeModal() {
     closeModal();
   });
 
-  // Handle message sending
+  document.getElementById('enterButton').addEventListener('click', () => {
+    const nameInput = document.getElementById('nameInput');
+    if (nameInput.value.trim() === '') {
+      document.getElementById('errorMessage').textContent = 'Name cannot be empty!';
+      document.getElementById('errorMessage').style.display = 'block';
+      return;
+    }
+    userName = nameInput.value.trim();
+    localStorage.setItem('userName', userName);
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('chatScreen').style.display = 'flex';
+    
+     // **Request notification permission here**
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+      } else {
+        console.log('Notification permission denied');
+      }
+    });
+  }
+});
+
   document.getElementById('messageInput').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-      const messageContent = document.getElementById('messageInput').value.trim();
-      const currentTime = new Date().getTime();
-
-      if (messageContent && currentTime - lastMessageTime >= 5000) {
-        lastMessageTime = currentTime;
-        const messageId = `${Date.now()}-${Math.random()}`;
-        socket.emit('sendMessage', { sender: userName, message: messageContent, time: formatTime(), messageId });
-        document.getElementById('messageInput').value = '';
-      } else if (messageContent) {
-        alert('Please wait 5 seconds before sending another message.');
-      }
-    }
-  });
-
-  // Format time for messages
-  function formatTime() {
-    const now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    return `${hours}:${minutes} ${ampm}`;
-  }
-
-  // Handle background button click
-  document.getElementById('backgroundButton').addEventListener('click', () => {
-    document.getElementById('backgroundInput').click();
-  });
-
-  // Handle background image selection
-  document.getElementById('backgroundInput').addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.body.style.backgroundImage = `url(${e.target.result})`;
-      };
-      reader.readAsDataURL(file);
+      const message = event.target.value.trim();
+      if (message === '') return;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      socket.emit('sendMessage', { sender: userName, message, time });
+      event.target.value = '';
     }
   });
 </script>
