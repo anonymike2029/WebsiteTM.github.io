@@ -371,15 +371,25 @@ socket.on('newMessage', (messageData) => {
   }
 });
 
-  document.getElementById('messageInput').addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      const message = event.target.value.trim();
-      if (message === '') return;
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      socket.emit('sendMessage', { sender: userName, message, time });
-      event.target.value = '';
-    }
-  });
+document.getElementById('messageInput').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    const message = event.target.value.trim();
+    if (message === '') return;
+
+    // Format time in 12-hour format
+    const now = new Date();
+    const hours = now.getHours() % 12 || 12;  // Handle 12-hour format
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const amPm = now.getHours() >= 12 ? 'PM' : 'AM';
+
+    const time = `${hours}:${minutes} ${amPm}`;
+
+    // Send the message through the socket
+    socket.emit('sendMessage', { sender: userName, message, time });
+    event.target.value = '';  // Clear the input
+  }
+});
+
 </script>
 </body>
 </html>
