@@ -2,20 +2,19 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // To generate unique message IDs
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
 const port = 8000;
 
-// In-memory storage for taken names (you could use a database in production)
+// In-memory storage for taken names
 let takenNames = [];
-// In-memory storage for messages
 let messages = [];
-// In-memory storage for user profile pictures
-let userProfilePics = {};  // Keyed by username
 
-// Serve static files
+// Serve static files (e.g., for the front-end)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware to handle JSON data
@@ -48,36 +47,42 @@ io.on('connection', (socket) => {
 
   // Listen for new chat messages from a user
   socket.on('sendMessage', (message) => {
-    messages.push(message);  // Store the message in the array
-    io.emit('newMessage', message);  // Broadcast to all clients
+    const messageId = uuidv4(); // Generate a unique message ID
+    const newMessage = { ...message, messageId, time: new Date().toLocaleTimeString() };
+    
+    // Add the new message to the messages array
+    messages.push(newMessage);
+
+    // Broadcast the new message to all connected clients
+    io.emit('newMessage', newMessage);
   });
 
   // Listen for an edit message request from a client
   socket.on('editMessage', (messageData) => {
+    // Find the message by its messageId and update the message content
     const index = messages.findIndex(msg => msg.messageId === messageData.messageId);
     if (index !== -1) {
       messages[index].message = messageData.newMessage;
+
+      // Broadcast the edited message to all clients
       io.emit('editedMessage', messages[index]);
     }
   });
 
   // Listen for a delete message request from a client
   socket.on('deleteMessage', (messageId) => {
+    // Find the index of the message to delete
     const index = messages.findIndex(msg => msg.messageId === messageId);
+    
     if (index !== -1) {
+      // Remove the message from the messages array
       messages.splice(index, 1);
-      io.emit('deletedMessage', messageId);  // Broadcast deletion to all clients
+
+      // Broadcast the deleted message ID to all clients so they can remove it from their view
+      io.emit('deletedMessage', messageId);
+    } else {
+      console.log(`Message with ID ${messageId} not found`);
     }
-  });
-
-  // Handle profile picture upload
-  socket.on('uploadProfilePic', (picData) => {
-    const userName = picData.userName;
-    userProfilePics[userName] = picData.picUrl;  // Store the uploaded profile picture
-    console.log(`Profile picture uploaded for ${userName}: ${picData.picUrl}`);
-
-    // Send the updated profile picture URL back to the client
-    io.emit('profilePicUpdated', { userName, picUrl: picData.picUrl });
   });
 
   socket.on('disconnect', () => {
