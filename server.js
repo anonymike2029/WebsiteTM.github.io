@@ -1,18 +1,15 @@
 const express = require('express');
+const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid'); // To generate unique message IDs
 const fs = require('fs'); // File system module to read/write the JSON file
 
 const app = express();
-const port = 8000;
-
-// Create a new Express app that will automatically use HTTP
-const server = app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
-
+const server = http.createServer(app);
 const io = socketIo(server);
+
+const port = 8000;
 
 // Path to the names.json file
 const namesFilePath = path.join(__dirname, 'names.json');
@@ -102,4 +99,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
+});
+
+// Start the server
+server.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
