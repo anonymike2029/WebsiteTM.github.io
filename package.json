@@ -1,18 +1,18 @@
 {
-  "name": "your-project-name",
+  "name": "websitetm.github.io",
   "version": "1.0.0",
-  "description": "A real-time chat application with WebSockets",
+  "description": "Hello, this is my port of ***.gg, name is censored for security reasons.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.6.1",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {},
-  "engines": {
-    "node": ">=14.0.0"
+    "express": "^4.21.2",
+    "mongoose": "^8.8.4",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.3"
   }
 }
